@@ -1,9 +1,9 @@
 Scheduling Type: Interactive (preemptive)
 Scheduling Name: Multiple Queues
-Simulation Run Time: 3262
+Simulation Run Time: 2831
 Mean: 1100
 Standard Deviation: 510
 Process #	CPU Time	IO Blocking	CPU Completed	CPU Blocked
-0		883 (ms)	100 (ms)	883 (ms)	8 times
-1		883 (ms)	500 (ms)	883 (ms)	1 times
-2		1496 (ms)	30 (ms)		1496 (ms)	49 times
+0		950 (ms)	100 (ms)	950 (ms)	9 times
+1		950 (ms)	500 (ms)	950 (ms)	1 times
+2		748 (ms)	30 (ms)		748 (ms)	24 times

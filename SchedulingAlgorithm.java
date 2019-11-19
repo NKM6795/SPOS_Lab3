@@ -68,15 +68,21 @@ public class SchedulingAlgorithm {
             out.close();
             return result;
           }
+
+          comptime += workTime[currentProcessAndQueue[1]] - workingTime[currentProcessAndQueue[0]];
+
           currentProcessAndQueue = getNextProcess(multipleQueues, processVector, -1);
           process = (sProcess) processVector.elementAt(currentProcessAndQueue[0]);
           workingTime[currentProcessAndQueue[0]] = 0;
           out.println("Process: " + currentProcessAndQueue[0] + " registered... (" + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.cpudone + ")");
         }      
+        
         if (process.ioblocking == process.ionext) {
           out.println("Process: " + currentProcessAndQueue[0] + " I/O blocked... (" + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.cpudone + ")");
           process.numblocked++;
           process.ionext = 0; 
+
+          comptime += workTime[currentProcessAndQueue[1]] - workingTime[currentProcessAndQueue[0]];
 
           currentProcessAndQueue = getNextProcess(multipleQueues, processVector, currentProcessAndQueue[0]);
           process = (sProcess) processVector.elementAt(currentProcessAndQueue[0]);
