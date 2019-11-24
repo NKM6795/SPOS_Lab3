@@ -17,6 +17,8 @@ public class Scheduling {
   private static int standardDev = 100;
   private static int runtime = 1000;
   private static Vector processVector = new Vector();
+  private static List workTimeList = new ArrayList();
+  private static int[] workTime;
   private static Results result = new Results("null","null",0);
   private static String resultsFile = "Summary-Results";
 
@@ -26,6 +28,8 @@ public class Scheduling {
     String tmp;
     int cputime = 0;
     int ioblocking = 0;
+    int ioblockingTime = 0;
+    int importantPart = 0;
     double X = 0.0;
 
     try {   
@@ -51,20 +55,35 @@ public class Scheduling {
           StringTokenizer st = new StringTokenizer(line);
           st.nextToken();
           ioblocking = Common.s2i(st.nextToken());
+          ioblockingTime = Common.s2i(st.nextToken());
+          importantPart = Common.s2i(st.nextToken());
+
           X = Common.R1();
           while (X == -1.0) {
             X = Common.R1();
           }
           X = X * standardDev;
           cputime = (int) X + meanDev;
-          processVector.addElement(new sProcess(cputime, ioblocking, 0, 0, 0));          
+          processVector.addElement(new sProcess(cputime, ioblocking, ioblockingTime, importantPart, 0, 0, 0));          
         }
         if (line.startsWith("runtime")) {
           StringTokenizer st = new StringTokenizer(line);
           st.nextToken();
           runtime = Common.s2i(st.nextToken());
         }
+        if (line.startsWith("queue")) {
+          StringTokenizer st = new StringTokenizer(line);
+          st.nextToken();
+          int queueTime = Common.s2i(st.nextToken());
+          workTimeList.add(queueTime);
+        }
       }
+
+      workTime = new int[workTimeList.size()];
+      for (int i = 0; i < workTimeList.size(); ++i) {
+        workTime[i] = (int) workTimeList.get(i);
+      }
+
       in.close();
     } catch (IOException e) { /* Handle exceptions */ }
   }
@@ -110,11 +129,11 @@ public class Scheduling {
           }
           X = X * standardDev;
         int cputime = (int) X + meanDev;
-        processVector.addElement(new sProcess(cputime,i*100,0,0,0));          
+        processVector.addElement(new sProcess(cputime,i*100,i*100,i*100,0,0,0));          
         i++;
       }
     }
-    result = SchedulingAlgorithm.Run(runtime, processVector, result);    
+    result = SchedulingAlgorithm.Run(runtime, processVector, workTime, result);    
     try {
       //BufferedWriter out = new BufferedWriter(new FileWriter(resultsFile));
       PrintStream out = new PrintStream(new FileOutputStream(resultsFile));

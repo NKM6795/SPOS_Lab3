@@ -1,4 +1,5 @@
 public class Common {
+  static java.util.Random generator = new java.util.Random(System.currentTimeMillis());
 
   static public int s2i (String s) {
     int i = 0;
@@ -12,13 +13,12 @@ public class Common {
   }
 
   static public double R1 () {
-    java.util.Random generator = new java.util.Random(System.currentTimeMillis());
     double U = generator.nextDouble();
-    while (U < 0 || U >= 1) {
+    while (U == 0. || U == 1.) {
       U = generator.nextDouble();
     }
     double V = generator.nextDouble();
-    while (V < 0 || V >= 1) {
+    while (V == 0. || V == 1.) {
       V = generator.nextDouble();
     }
     double X =  Math.sqrt((8/Math.E)) * (V - 0.5)/U;
