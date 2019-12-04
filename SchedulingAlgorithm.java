@@ -29,8 +29,10 @@ public class SchedulingAlgorithm {
 
     int[][] blockedList = new int[size][];
     for (int i = 0; i < size; ++i) {
-      blockedList[i] = new int[2];
+      blockedList[i] = new int[4];
       blockedList[i][0] = 0;
+      blockedList[i][2] = 0;    // went to current queue
+      blockedList[i][3] = 0;    // went to top queue
     }
 
     int[] workingTime = new int[size];
@@ -52,16 +54,28 @@ public class SchedulingAlgorithm {
       comptime += currentProcessAndQueueAndDeltaComptime[2];
       while (comptime < runtime) {
         if (workingTime[currentProcessAndQueueAndDeltaComptime[0]] == workTime[currentProcessAndQueueAndDeltaComptime[1]]) {
-          out.println("Process: " + currentProcessAndQueueAndDeltaComptime[0] + " switched... (" + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.cpudone + ")");
+          int id = currentProcessAndQueueAndDeltaComptime[0];
           
-          workingTime[currentProcessAndQueueAndDeltaComptime[0]] = 0;
+          out.println("Process: " + id + " switched... (" + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.cpudone + ")");
+          
+          workingTime[id] = 0;
 
           int currentQueue = currentProcessAndQueueAndDeltaComptime[1];
-          if (currentQueue != multipleQueues.length - 1) {
-            multipleQueues[currentQueue + 1].addLast(currentProcessAndQueueAndDeltaComptime[0]);
+
+          if (blockedList[id][3] == 1) {
+            blockedList[id][2] = 0;
+            blockedList[id][3] = 0;
+            multipleQueues[0].addLast(id);
+          } 
+          else if (blockedList[id][2] == 1) {
+            blockedList[id][2] = 0;
+            multipleQueues[currentQueue].addLast(id);
+          }
+          else if (currentQueue != multipleQueues.length - 1) {
+            multipleQueues[currentQueue + 1].addLast(id);
           }
           else {
-            multipleQueues[currentQueue].addLast(currentProcessAndQueueAndDeltaComptime[0]);
+            multipleQueues[currentQueue].addLast(id);
           }
 
           currentProcessAndQueueAndDeltaComptime = registeredNewProcess(processVector, out, multipleQueues, blockedList);
@@ -94,23 +108,12 @@ public class SchedulingAlgorithm {
           currentProcessAndQueueAndDeltaComptime = registeredNewProcess(processVector, out, multipleQueues, blockedList);
           process = (sProcess) processVector.elementAt(currentProcessAndQueueAndDeltaComptime[0]);
           comptime += currentProcessAndQueueAndDeltaComptime[2];
-         }        
-
-        if (process.cpudone != 0 && process.cpudone % process.importantPart == 0) {
-          out.println("Process: " + currentProcessAndQueueAndDeltaComptime[0] + " went to top queue... (" + process.cputime + " " + process.ioblocking + " " + process.cpudone + " " + process.cpudone + ")");
-         
-          workingTime[currentProcessAndQueueAndDeltaComptime[0]] = 0;
-          multipleQueues[0].addLast(currentProcessAndQueueAndDeltaComptime[0]);
-
-          currentProcessAndQueueAndDeltaComptime = registeredNewProcess(processVector, out, multipleQueues, blockedList);
-          process = (sProcess) processVector.elementAt(currentProcessAndQueueAndDeltaComptime[0]);
-          comptime += currentProcessAndQueueAndDeltaComptime[2];
-        }
+        }        
 
         process.cpudone++;    
         ++workingTime[currentProcessAndQueueAndDeltaComptime[0]];
 
-        updateBlockedList(multipleQueues, blockedList, processVector);
+        updateBlockedList(multipleQueues, blockedList, processVector, out);
 
         if (process.ioblocking > 0) {
           process.ionext++;
@@ -123,19 +126,27 @@ public class SchedulingAlgorithm {
     return result;
   }
 
-  private static boolean updateBlockedList(Deque[] multipleQueues, int[][] blockedList, Vector processVector) {
+  private static boolean updateBlockedList(Deque[] multipleQueues, int[][] blockedList, Vector processVector, PrintStream out) {
     boolean is_update = false;
     for (int i = 0; i < blockedList.length; ++i) {
       if (blockedList[i][0] == 1) {
         int idQueue = blockedList[i][1];
 
-        sProcess curentProcess = (sProcess) processVector.elementAt(i);
-        ++curentProcess.ionext;
+        sProcess currentProcess = (sProcess) processVector.elementAt(i);
+        ++currentProcess.ionext;
 
-        if (curentProcess.ionext == curentProcess.ioblockingTime) {
+        if (currentProcess.ionext == currentProcess.ioblockingTime) {
+          if (currentProcess.numblocked != 0 && currentProcess.numblocked % currentProcess.importantPart == 0) {
+            out.println("Process: " + i + " went to top queue... (" + currentProcess.cputime + " " + currentProcess.ioblocking + " " + currentProcess.cpudone + " " + currentProcess.cpudone + ")");
+            
+            blockedList[i][3] = 1;
+          } 
           multipleQueues[idQueue].addFirst(i);
-
+    
           blockedList[i][0] = 0;
+          blockedList[i][2] = 1;
+
+          currentProcess.ionext = 0;
           is_update = true;
         }
       }
@@ -148,7 +159,7 @@ public class SchedulingAlgorithm {
     int comptime = 0;
     if (currentProcessAndQueue[0] == -1) {
       ++comptime;
-      while (!updateBlockedList(multipleQueues, blockedList, processVector)) {
+      while (!updateBlockedList(multipleQueues, blockedList, processVector, out)) {
         ++comptime;
       }
       currentProcessAndQueue = getNextProcess(multipleQueues, processVector);
